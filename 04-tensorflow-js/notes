@@ -3,4 +3,5 @@
   1: {className: "window screen", probability: 0.269692063331604}
   2: {className: "book jacket, dust cover, dust jacket, dust wrapper", probability: 0.010916812345385551}
 
-
+2. Changing content source to webcam and predicting from that content.
+   - The steps as outlines in the tutorial give me an error when loading the page about the stream and webcamElement object not being defined on JS file.  (webcamElement.srcObject = stream;)
