@@ -1,0 +1,6 @@
+1. Running raw index.html and index.js from tutorial at the beginning shows a picture of a dog. The javascript console window in the Chrome developer tools shows the classification probabilities of:
+  0: {className: "fire screen, fireguard", probability: 0.6637800931930542}
+  1: {className: "window screen", probability: 0.269692063331604}
+  2: {className: "book jacket, dust cover, dust jacket, dust wrapper", probability: 0.010916812345385551}
+
+
