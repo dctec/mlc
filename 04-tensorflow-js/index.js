@@ -1,3 +1,4 @@
+const webcamElement = document.getElementById('webcam');
 let net;
 
 // STEP 1 of tutorial
@@ -19,25 +20,6 @@ async function app() {
 
 // STEP TWO of Tutorial: setup webcam AND remove prediction through image and instead make predictions through content from webcam
 // https://codelabs.developers.google.com/codelabs/tensorflowjs-teachablemachine-codelab/index.html#5
-async function setupWebcam() {
-  return new Promise((resolve, reject) => {
-    const navigatorAny = navigator;
-    navigator.getUserMedia = navigator.getUserMedia ||
-        navigatorAny.webkitGetUserMedia || navigatorAny.mozGetUserMedia ||
-        navigatorAny.msGetUserMedia;
-    if (navigator.getUserMedia) {
-      navigator.getUserMedia({video: true},
-        stream => {
-          webcamElement.srcObject = stream;
-          webcamElement.addEventListener('loadeddata',  () => resolve(), false);
-        },
-        error => reject());
-    } else {
-      reject();
-    }
-  });
-}
-
 async function app() {
   console.log('Loading mobilenet..');
 
@@ -59,5 +41,25 @@ async function app() {
     await tf.nextFrame();
   }
 }
+
+async function setupWebcam() {
+  return new Promise((resolve, reject) => {
+    const navigatorAny = navigator;
+    navigator.getUserMedia = navigator.getUserMedia ||
+        navigatorAny.webkitGetUserMedia || navigatorAny.mozGetUserMedia ||
+        navigatorAny.msGetUserMedia;
+    if (navigator.getUserMedia) {
+      navigator.getUserMedia({video: true},
+        stream => {
+          webcamElement.srcObject = stream;
+          webcamElement.addEventListener('loadeddata',  () => resolve(), false);
+        },
+        error => reject());
+    } else {
+      reject();
+    }
+  });
+}
+
 
 app();
