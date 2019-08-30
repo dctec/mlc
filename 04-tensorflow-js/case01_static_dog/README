@@ -1,0 +1,9 @@
+Following "TensorFlow.js Transfer Learning Image Classifier" tutorial:
+https://codelabs.developers.google.com/codelabs/tensorflowjs-teachablemachine-codelab/index.html#2
+
+FIRST practice run is to load a static image of a dog and pass it to the classifier to spit out its category. The results are shown in the javascript console window from the developer tools of the browser.
+
+Example using source image: https://i.imgur.com/JlUvsxa.jpg
+0: {className: "American Staffordshire terrier, Staffordshire terrier, American pit bull terrier, pit bull terrier", probability: 0.7014867067337036}
+1: {className: "malinois", probability: 0.05788983032107353}
+2: {className: "tennis ball", probability: 0.05658986046910286} 

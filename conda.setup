@@ -1,12 +1,30 @@
+#!/bin/bash
+
+# using Anaconda Python 3.7 64bit for Mac OSX
+# https://repo.anaconda.com/archive/Anaconda3-2019.07-MacOSX-x86_64.sh
+
+# check if conda exists
+which conda |grep -q bin
+[[ $? -eq 0 ]]
+
+MY_ANACONDA_SRC_URL=curl -O https://repo.anaconda.com/archive/Anaconda3-2019.03-Linux-x86_64.sh
+MY_DOWNLOAD_DIR="~/Download"
+
+
+#check if Download directory exists, create it if not
+[[ -d "${MY_DOWNLOAD_DIR}" ]] || mkdir "${MY_DOWNLOAD_DIR}"
+cd "${MY_DOWNLOAD_DIR}"
+
+curl -O https://repo.anaconda.com/archive/Anaconda3-2019.07-Linux-x86_64.sh
+
 git config --global user.name "dctec"
 git config --global user.email "mlc@digitalfuss.net"
 git config --global color.ui true
 git config --global core.editor vim
 cat ~/.gitconfig
-conda config --set env_prompt '({name})'
 conda config --set env_prompt '({name}) '
 
 conda create -n pyml python=3
 source activate pyml
-conda install keras h5py flask gevent scikit-learn
+conda install keras h5py flask pillow gevent scikit-learn matplotlib pandas
 

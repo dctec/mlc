@@ -1,2 +1,5 @@
 Following tutorial from: 
 https://www.tensorflow.org/js/tutorials/transfer/image_classification
+
+FIRST practice run is to load a static image of a dog and pass it to the classifier to spit out its category. The results are shown in the javascript console window from the developer tools of the browser.
+

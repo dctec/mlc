@@ -1,0 +1,33 @@
+<html>
+    <!-- Step 7 of tutorial Add KNN Classifier -->
+    <!-- STEP 7. of tutorial https://codelabs.developers.google.com/codelabs/tensorflowjs-teachablemachine-codelab/index.html#6
+
+      ""Now, let's make this more useful. We will make a custom 3-class object classifier using the webcam on the fly. We're going to make a classification through MobileNet, but this time we will take an internal representation (activation) of the model for a particular webcam image and use that for classification.
+
+      We'll use a module called a "K-Nearest Neighbors Classifier", which effectively lets us put webcam images (actually, their MobileNet activations) into different categories (or "classes"), and when the user asks to make a prediction we simply choose the class that has the most similar activation to the one we are making a prediction for.
+
+      Add an import of KNN Classifier to the end of the imports in the <head> tag of index.html (you will still need MobileNet, so don't remove that import):""
+    -->
+
+  <head>
+    <!-- Load the latest version of TensorFlow.js -->
+    <script src="https://unpkg.com/@tensorflow/tfjs"></script>
+    <script src="https://unpkg.com/@tensorflow-models/mobilenet@2.0.2"></script>
+    <script src="https://unpkg.com/@tensorflow-models/knn-classifier"></script>
+
+  </head>
+  <body>
+    <div id="console"></div>
+
+    <video autoplay playsinline muted id="webcam" width="224" height="224"></video>
+
+    <!-- buttons to add training images to model -->
+    <button id="class-a">Add A</button>
+    <button id="class-b">Add B</button>
+    <button id="class-c">Add C</button>
+
+    <!-- Load index.js after the content of the page -->
+    <script src="index.js"></script>
+
+  </body>
+</html>

@@ -1,0 +1,23 @@
+<!-- https://codelabs.developers.google.com/codelabs/tensorflowjs-teachablemachine-codelab/index.html#5 
+MobileNet Inference in browser
+Setup webcam AND remove prediction through image and instead make predictions through content from webcam
+-->
+
+<html>
+  <head>
+    <!-- Load the latest version of TensorFlow.js -->
+    <script src="https://unpkg.com/@tensorflow/tfjs"></script>
+    <script src="https://unpkg.com/@tensorflow-models/mobilenet@2.0.2"></script>
+
+  </head>
+
+  <body>
+    <div id="console"></div>
+    <!-- Add an image from webcam to classify-->
+    <video autoplay playsinline muted id="webcam" width="224" height="224"></video>
+
+    <!-- Load index.js after the content of the page -->
+    <script src="index.js"></script>
+
+  </body>
+</html>

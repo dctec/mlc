@@ -1,0 +1,21 @@
+<!-- https://codelabs.developers.google.com/codelabs/tensorflowjs-teachablemachine-codelab/index.html#2 -->
+
+<!-- Use mobilenet@2.0.2 instead of just mobilenet per issue https://github.com/tensorflow/tfjs/issues/1830 --> 
+
+<html>
+  <head>
+    <!-- Load the latest version of TensorFlow.js -->
+    <script src="https://unpkg.com/@tensorflow/tfjs"></script>
+    <script src="https://unpkg.com/@tensorflow-models/mobilenet@2.0.2"></script>
+
+  </head>
+  <body>
+    <div id="console"></div>
+    <!-- Add an image that we will use to test -->
+       <img id="img" crossOrigin src="https://i.imgur.com/JlUvsxa.jpg" width=227 height=227/>
+
+    <!-- Load index.js after the content of the page -->
+    <script src="index.js"></script>
+
+  </body>
+</html>
