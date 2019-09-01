@@ -20,8 +20,17 @@ let net;
 let cnt_capture=[];
 let my_prediction;
 let my_probability;
-const MAX_CAPTURE_SEQ_CNT = 5;
-const classes = ['A', 'B', 'C'];
+let status_playing=false;
+const MAX_CAPTURE_SEQ_CNT = 15;
+const classes = ['A', 'B', 'C','None of the above'];
+const btn_train   =  document.getElementById("btn_train");
+const btn_play    =  document.getElementById("btn_play");
+const btn_sample_A = document.getElementById("btn_sample_A");
+const btn_sample_B = document.getElementById("btn_sample_B");
+const btn_sample_C = document.getElementById("btn_sample_C");
+const console_div  = document.getElementById("console");
+const console2_div  = document.getElementById("console2");
+
 
 // function sleep
 //   - input: milliseconds integer
@@ -31,6 +40,7 @@ function sleep(ms) {
 }
 
 async function app() {
+
   console.log('Loading mobilenet..');
 
   net = await mobilenet.load();
@@ -38,6 +48,7 @@ async function app() {
 
   console.log('Sucessfully loaded model');
 
+  console.log('Setting up webcam');
   await setupWebcam();
   console.log('Sucessfully set Webcam up');
 
@@ -46,7 +57,7 @@ async function app() {
   for(i=0;i<classes.length;i++){
     cnt_capture[i]=0;
   }
-  
+   
 
   // function addExample(classId)
   //   Reads an image from the webcam and associates it with a specific class
@@ -58,7 +69,81 @@ async function app() {
   // vs regular old fashion legible at all levels syntax:
   //    var addExample = function addExample(classId) {
   //
-  var addExample = function addExample(classId) {
+
+  //debugger
+
+    btn_train.addEventListener('click', function (event) {
+      btn_play.disabled = false;
+      btn_sample_A.disabled = false;
+      btn_sample_B.disabled = true;
+      btn_sample_C.disabled = true;
+      status_playing = false;
+    });
+      
+
+    btn_play.addEventListener('click', function (event) { 
+      btn_sample_A.disabled = true;
+      btn_sample_B.disabled = true;
+      btn_sample_C.disabled = true;
+      status_playing = true;
+      return doClassify();
+    });
+
+  while(status_playing == false) {
+    btn_sample_A.addEventListener('click', function () { 
+      btn_sample_A.disabled = true;
+      btn_sample_B.disabled = false;
+      btn_sample_C.disabled = true;
+      status_playing = false;
+      console.log('btn_a')
+      return addExample(0)
+    });
+
+  btn_sample_B.addEventListener('click', function (event) { 
+      btn_sample_A.disabled = true;
+      btn_sample_B.disabled = true;
+      btn_sample_C.disabled = false;
+      status_playing = false;
+      return addExample(1)
+  });
+
+  btn_sample_C.addEventListener('click', function (event) { 
+      btn_sample_A.disabled = true;
+      btn_sample_B.disabled = true;
+      btn_sample_C.disabled = true;
+      status_playing = false;
+      return addExample(2)
+  });
+  
+
+    
+  /*
+  // When clicking a button, add an example for that class.
+  document.getElementById('class-a').addEventListener('click', function () { return addExample(0)});
+  // OR short arrow form syntax:
+  // document.getElementById('class-a').addEventListener('click', () => addExample(0));
+  document.getElementById('class-b').addEventListener('click', () => addExample(1));
+  document.getElementById('class-c').addEventListener('click', () => addExample(2));
+  */
+
+  // If no category button is clicked, sample background into 'no action' category 
+  // meanwhile
+  await tf.nextFrame();
+  var my_skip;
+  if (my_skip < 100000) {
+    ///await sleep(3000);
+    await addExample(3);
+    my_skip++;
+  } else {
+    my_skip = 0;
+  }
+
+  }
+}
+
+
+  //var addExample = function addExample(classId) {
+function addExample(classId) {
     var activation;
     var i;
 
@@ -96,78 +181,77 @@ async function app() {
     // the classId training converges quickly on this image. Otherwise it takes
     // 3 clicks before converging (0.33 , 0.66, 1)
     for(i=0;i<MAX_CAPTURE_SEQ_CNT;i++){
-        activation = net.infer(webcamElement, 'conv_preds');
-        classifier.addExample(activation, classId);
+        //activation = net.infer(webcamElement, 'conv_preds');
+        //classifier.addExample(activation, classId);
         cnt_capture[classId]+=1;
 
-        document.getElementById('console2').innerText = ``;
+        console2_div.innerText = ``;
         for(j=0;j<classes.length;j++){
-          document.getElementById('console2').innerText += `
+          console2_div.innerText += `
             training count class ${classes[j]} : ${cnt_capture[j]}\n
           `;
-        }
-    }
-  };
+        } // for j
+    } // for i
+} //function addExample
 
-  // When clicking a button, add an example for that class.
-  // document.getElemebtById('class-a').addEventListener('click', function () return addExample(0);
-  document.getElementById('class-a').addEventListener('click', () => addExample(0));
-  document.getElementById('class-b').addEventListener('click', () => addExample(1));
-  document.getElementById('class-c').addEventListener('click', () => addExample(2));
 
-  while (true) {
+async function doClassify() {
+
+  while(status_playing == true) {
     // Get the total number of classes 
     // API doc:
     //    classifier.getNumClasses(): number
     if (classifier.getNumClasses() > 0) {
 
-      // Get the activation from mobilenet from the webcam.
-      const activation = net.infer(webcamElement, 'conv_preds');
+        // Get the activation from mobilenet from the webcam.
+        const activation = net.infer(webcamElement, 'conv_preds');
 
-      // Get the most likely class and confidences from the classifier module.
-      // API doc:
-      // Making a prediction (https://github.com/tensorflow/tfjs-models/tree/master/knn-classifier)
-      //    classifier.predictClass(input: tf.Tensor, k=3): Promise<{
-      //      label:string, classIndex:number, confidences: {[classId: number]: number}}>;
-      // where
-      //   input: An example to make a prediction on, usually an activation from another model.
-      //   k: The K value to use in K-nearest neighbors. The algorithm will first find the K nearest 
-      //     examples from those it was previously shown, and then choose the class that appears the 
-      //     most as the final prediction for the input example. Defaults to 3. If examples < k, k = examples.
-      // Returns an object where:
-      //   label: the label (class name) with the most confidence.
-      //   classIndex: the 0-based index of the class (for backwards compatibility).
-      //   confidences: maps each label to their confidence score.
-      const result = await classifier.predictClass(activation);
-
-
-      my_prediction = classes[result.classIndex]
-      my_probability = result.confidences[result.classIndex]
+        // Get the most likely class and confidences from the classifier module.
+        // API doc:
+        // Making a prediction (https://github.com/tensorflow/tfjs-models/tree/master/knn-classifier)
+        //    classifier.predictClass(input: tf.Tensor, k=3): Promise<{
+        //      label:string, classIndex:number, confidences: {[classId: number]: number}}>;
+        // where
+        //   input: An example to make a prediction on, usually an activation from another model.
+        //   k: The K value to use in K-nearest neighbors. The algorithm will first find the K nearest 
+        //     examples from those it was previously shown, and then choose the class that appears the 
+        //     most as the final prediction for the input example. Defaults to 3. If examples < k, k = examples.
+        // Returns an object where:
+        //   label: the label (class name) with the most confidence.
+        //   classIndex: the 0-based index of the class (for backwards compatibility).
+        //   confidences: maps each label to their confidence score.
+        const result = await classifier.predictClass(activation);
 
 
-      if (my_probability < .9) {
-        document.getElementById('console').innerText = `
-          probability: ${my_probability}\n
-          ...I am waiting for you take some action and let me predict the classification of an object\n
-        `;
-        // wait before moving to next frame and updating text on screen or else
-        // the text could change so fast and be annoying to user
-        await sleep(3000);
-       } else {
-          document.getElementById('console').innerText = `
-              prediction: ${my_prediction}\n
-              probability: ${my_probability}
-          `;
-       } 
-  
-    }
+        my_prediction = classes[result.classIndex];
+        my_probability = result.confidences[result.classIndex];
+
+
+        if (result.classIndex == 3) {
+            console_div.innerText = `
+              ...I am waiting for you take some action and let me predict the classification of an object\n
+            `;
+            // wait before moving to next frame and updating text on screen or else
+            // the text could change so fast and be annoying to user
+            //await sleep(3000);
+         } else {
+            console_div.innerText = `
+                prediction: ${my_prediction}\n
+                probability: ${my_probability}
+            `;
+         } //endif 
+
+    } // if gerNumClasses
 
 
     // tf.nextFrame() returns a promise that resolve when a requestAnimationFrame has 
     // completed (https://js.tensorflow.org/api/latest/#nextFrame)
     await tf.nextFrame();
-  }
-}
+
+  } // while
+
+}  //function Classify
+
 
 async function setupWebcam() {
   return new Promise((resolve, reject) => {
