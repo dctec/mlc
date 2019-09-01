@@ -1,12 +1,11 @@
+// [dctec] Practice ML tutorial
+// 2019.08.31
 // STEP 7 of tutorial. KNN Classifier with 'No Action' class
 // https://codelabs.developers.google.com/codelabs/tensorflowjs-teachablemachine-codelab/index.html#7
 
 // Q: What is an 'activation' and a 'promise'? I see those two mentioned often
 // but not clearly understand the origin and meaning. -dctec
 //
-// Q: What's the difference between .infer and .classify . I read that .infer 
-// is used in transfer learning but I need more info on the differences and 
-// when to use each. -dctec
 
 // knnClassifier.create()
 //    Create classifier (knnClassifier module is automatically included when 
@@ -15,49 +14,30 @@
 const classifier = knnClassifier.create();
 
 const webcamElement = document.getElementById('webcam');
-
-let net;
-let cnt_capture=[];
-let my_prediction;
-let my_probability;
-let status_playing=false;
-const MAX_CAPTURE_SEQ_CNT = 15;
-const classes = ['A', 'B', 'C','None of the above'];
+const MAX_SEQ_CAPTURE = 25;
+const classes = ['A', 'B', 'C', 'No Action'];
 const btn_train   =  document.getElementById("btn_train");
 const btn_play    =  document.getElementById("btn_play");
-const btn_sample_A = document.getElementById("btn_sample_A");
-const btn_sample_B = document.getElementById("btn_sample_B");
-const btn_sample_C = document.getElementById("btn_sample_C");
+const btn_sample_a = document.getElementById("btn_sample_A");
+const btn_sample_b = document.getElementById("btn_sample_B");
+const btn_sample_c = document.getElementById("btn_sample_C");
 const console_div  = document.getElementById("console");
 const console2_div  = document.getElementById("console2");
+const top_banner_div  = document.getElementById("top_banner");
+const append_yes = true;
+const append_no = false;
+
+let net;
+let do_play;
+let my_prediction;
+let my_probability;
+let cnt_capture = [0 , 0 , 0 ,0]; // 4 clases
+let my_header = "";
 
 
-// function sleep
-//   - input: milliseconds integer
-//   From https://stackoverflow.com/questions/951021/what-is-the-javascript-version-of-sleep
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve,ms));
-}
+
 
 async function app() {
-
-  console.log('Loading mobilenet..');
-
-  net = await mobilenet.load();
-  // Notice that 'await' is only valid in an async function
-
-  console.log('Sucessfully loaded model');
-
-  console.log('Setting up webcam');
-  await setupWebcam();
-  console.log('Sucessfully set Webcam up');
-
-  // init cnt array to keep track of captured samples per classId
-  
-  for(i=0;i<classes.length;i++){
-    cnt_capture[i]=0;
-  }
-   
 
   // function addExample(classId)
   //   Reads an image from the webcam and associates it with a specific class
@@ -69,188 +49,187 @@ async function app() {
   // vs regular old fashion legible at all levels syntax:
   //    var addExample = function addExample(classId) {
   //
-
-  //debugger
-
-    btn_train.addEventListener('click', function (event) {
-      btn_play.disabled = false;
-      btn_sample_A.disabled = false;
-      btn_sample_B.disabled = true;
-      btn_sample_C.disabled = true;
-      status_playing = false;
-    });
-      
-
-    btn_play.addEventListener('click', function (event) { 
-      btn_sample_A.disabled = true;
-      btn_sample_B.disabled = true;
-      btn_sample_C.disabled = true;
-      status_playing = true;
-      return doClassify();
-    });
-
-  while(status_playing == false) {
-    btn_sample_A.addEventListener('click', function () { 
-      btn_sample_A.disabled = true;
-      btn_sample_B.disabled = false;
-      btn_sample_C.disabled = true;
-      status_playing = false;
-      console.log('btn_a')
-      return addExample(0)
-    });
-
-  btn_sample_B.addEventListener('click', function (event) { 
-      btn_sample_A.disabled = true;
-      btn_sample_B.disabled = true;
-      btn_sample_C.disabled = false;
-      status_playing = false;
-      return addExample(1)
-  });
-
-  btn_sample_C.addEventListener('click', function (event) { 
-      btn_sample_A.disabled = true;
-      btn_sample_B.disabled = true;
-      btn_sample_C.disabled = true;
-      status_playing = false;
-      return addExample(2)
-  });
-  
-
-    
-  /*
-  // When clicking a button, add an example for that class.
-  document.getElementById('class-a').addEventListener('click', function () { return addExample(0)});
-  // OR short arrow form syntax:
-  // document.getElementById('class-a').addEventListener('click', () => addExample(0));
-  document.getElementById('class-b').addEventListener('click', () => addExample(1));
-  document.getElementById('class-c').addEventListener('click', () => addExample(2));
-  */
-
-  // If no category button is clicked, sample background into 'no action' category 
-  // meanwhile
-  await tf.nextFrame();
-  var my_skip;
-  if (my_skip < 100000) {
-    ///await sleep(3000);
-    await addExample(3);
-    my_skip++;
-  } else {
-    my_skip = 0;
-  }
-
-  }
-}
-
-
-  //var addExample = function addExample(classId) {
-function addExample(classId) {
-    var activation;
-    var i;
-
-    //
+  var addExample = function addExample(classId) {
     // Get the intermediate activation of MobileNet 'conv_preds' and pass that
     // to the KNN classifier.
-    // (https://blog.understand.ai/tensorflow-js-a-painless-way-to-get-started-with-machine-learning-470c15f0f637)
-    //  Inference (actual prediction)
-    //    - The inference of an input also known as prediction of the class
-    // API doc (https://github.com/tensorflow/tfjs-models/tree/master/mobilenet)
-    // Getting embeddings
-    //     You can also get the embedding of an image to do transfer learning. 
-    //     The size of the embedding depends on the alpha (width) of the model.
-    //          model.infer(img: tf.Tensor3D | ImageData | HTMLImageElement |
-    //                      HTMLCanvasElement | HTMLVideoElement,
-    //                      embedding=false
-    //                     )
-    //          where
-    //              img: A tensor or an image element to make a classification on
-    //              embedding: If true, it returns the embedding. Otherwise it
-    //                          returns the 1000-dim unnormalized logits.
-    // const activation = net.infer(webcamElement, 'conv_preds');
+    for(i=0;i<MAX_SEQ_CAPTURE;i++){
+      const activation = net.infer(webcamElement, 'conv_preds');
+      // Pass the intermediate activation to the classifier.
+      classifier.addExample(activation, classId);
+      cnt_capture[classId]++;
+      console2_div.innerHTML = `training count per <b>class</b> =`;
+      for(j=0;j<classes.length;j++){
+        console2_div.innerHTML += `<br>    <b>${classes[j]}</b> : ${cnt_capture[j]}`;
+      } // for(j)
+    } // for(i)
+  }; //end of addExample function
 
-    // Pass the intermediate activation to the classifier.
-    // API doc: https://github.com/tensorflow/tfjs-models/tree/master/knn-classifier
-    //
-    //    classifier.addExample(example: tf.Tensor, label: number|string)
-    // where
-    //    example: An example to add to the dataset, usually an activation from another model
-    //    label: The label (class name) of the example
-    // classifier.addExample(activation, classId);
+  var wr_banner = function wr_banner(mymsg,my_append) {
+    if (my_append) {
+      top_banner_div.innerText += `\n${mymsg}`;
+    } else {
+      top_banner_div.innerText = `${mymsg}`;
+    }
+  };
 
+  var btn_clicks = function btn_clicks(btnId) {
+    btn_sample_a.disabled = true;
+    btn_sample_b.disabled = true;
+    btn_sample_c.disabled = true;
+    do_play = false;
 
-    // For each click, capture N sequential images from input. So, that the
-    // the classId training converges quickly on this image. Otherwise it takes
-    // 3 clicks before converging (0.33 , 0.66, 1)
-    for(i=0;i<MAX_CAPTURE_SEQ_CNT;i++){
-        //activation = net.infer(webcamElement, 'conv_preds');
-        //classifier.addExample(activation, classId);
-        cnt_capture[classId]+=1;
-
-        console2_div.innerText = ``;
-        for(j=0;j<classes.length;j++){
-          console2_div.innerText += `
-            training count class ${classes[j]} : ${cnt_capture[j]}\n
-          `;
-        } // for j
-    } // for i
-} //function addExample
-
-
-async function doClassify() {
-
-  while(status_playing == true) {
-    // Get the total number of classes 
-    // API doc:
-    //    classifier.getNumClasses(): number
-    if (classifier.getNumClasses() > 0) {
-
-        // Get the activation from mobilenet from the webcam.
-        const activation = net.infer(webcamElement, 'conv_preds');
-
-        // Get the most likely class and confidences from the classifier module.
-        // API doc:
-        // Making a prediction (https://github.com/tensorflow/tfjs-models/tree/master/knn-classifier)
-        //    classifier.predictClass(input: tf.Tensor, k=3): Promise<{
-        //      label:string, classIndex:number, confidences: {[classId: number]: number}}>;
-        // where
-        //   input: An example to make a prediction on, usually an activation from another model.
-        //   k: The K value to use in K-nearest neighbors. The algorithm will first find the K nearest 
-        //     examples from those it was previously shown, and then choose the class that appears the 
-        //     most as the final prediction for the input example. Defaults to 3. If examples < k, k = examples.
-        // Returns an object where:
-        //   label: the label (class name) with the most confidence.
-        //   classIndex: the 0-based index of the class (for backwards compatibility).
-        //   confidences: maps each label to their confidence score.
-        const result = await classifier.predictClass(activation);
+    switch (btnId) {
+      case "sample_a":
+        wr_banner("Capturing A...",append_no);
+        addExample(0);
+        btn_sample_a.disabled = true;
+        btn_sample_b.disabled = false;
+        wr_banner("Good job. Now sample B",append_yes);
+        break;
+      case "sample_b":
+        wr_banner("Capturing B...\n",append_no);
+        addExample(1);
+        btn_sample_b.disabled = true;
+        btn_sample_c.disabled = false;
+        wr_banner("Good job. Now sample C",append_yes);
+        break;
+      case "sample_c":
+        wr_banner("Capturing C...",append_no);
+        addExample(2);
+        btn_play.disabled = false;
+        btn_sample_c.disabled = true;
+        wr_banner("Good job. Now you can begin playing or you can train more",append_yes);
+        break;
+      case "train":
+        for(k=0;k<3;k++){ addExample(3); }
+        btn_play.disabled = true;
+        btn_sample_a.disabled = false;
+        do_play = false;
+        wr_banner("Now, start by showing an object on camera and pressing the \"Sample A\" button",append_no);
+        break;
+      case "play":
+        btn_sample_a.disabled = true;
+        btn_sample_b.disabled = true;
+        btn_sample_c.disabled = true;
+        do_play = true;
+        wr_banner("LET'S GUESS WHICH 3!!!",append_no);
+        break;
+    } // end switch
 
 
-        my_prediction = classes[result.classIndex];
-        my_probability = result.confidences[result.classIndex];
+  }; // end btn_clicks function
+
+  // disable the train button until camera is ready
+  btn_train.disabled = true;
+  wr_banner("Loading mobilenet..",append_no);
+  console.log('Loading mobilenet..');
+
+  // Load the model.
+  // Notice that 'await' is only valid in an async function
+  net = await mobilenet.load();
+  wr_banner("MobileNet loaded OK",append_yes);
+  console.log('Sucessfully loaded model');
+
+  wr_banner("Loading webcam..",append_yes);
+  console.log('Setting up webcam');
+  await setupWebcam();
+  wr_banner("WELCOME TO MY GUESS WHICH 3 GAME\n\nPlease begin by pressing the TRAIN button and waiting a few moments for background capture",append_no);
+  console.log('Sucessfully set Webcam up');
 
 
-        if (result.classIndex == 3) {
-            console_div.innerText = `
-              ...I am waiting for you take some action and let me predict the classification of an object\n
-            `;
-            // wait before moving to next frame and updating text on screen or else
-            // the text could change so fast and be annoying to user
-            //await sleep(3000);
-         } else {
-            console_div.innerText = `
-                prediction: ${my_prediction}\n
-                probability: ${my_probability}
-            `;
-         } //endif 
-
-    } // if gerNumClasses
+  // enable train button and let user begin
+  btn_train.disabled = false;
 
 
-    // tf.nextFrame() returns a promise that resolve when a requestAnimationFrame has 
-    // completed (https://js.tensorflow.org/api/latest/#nextFrame)
+  // When clicking a button, add an example for that class.
+  //     document.getElementById('class-a').addEventListener('click', function () { return addExample(0)});
+  // OR short arrow form syntax:
+  //     document.getElementById('class-a').addEventListener('click', () => addExample(0));
+  //
+  btn_sample_a.addEventListener('click', () => btn_clicks("sample_a"));
+  btn_sample_b.addEventListener('click', () => btn_clicks("sample_b"));
+  btn_sample_c.addEventListener('click', () => btn_clicks("sample_c"));
+  btn_train.addEventListener('click', () => btn_clicks("train"));
+  btn_play.addEventListener('click', () => btn_clicks("play"));
+
+  /* [dctec] Research notes, trying to understand API and concept in general
+  // Get the intermediate activation of MobileNet 'conv_preds' and pass that
+  // to the KNN classifier.
+  // (https://blog.understand.ai/tensorflow-js-a-painless-way-to-get-started-with-machine-learning-470c15f0f637)
+  //  Inference (actual prediction)
+  //    - The inference of an input also known as prediction of the class
+  // API doc (https://github.com/tensorflow/tfjs-models/tree/master/mobilenet)
+  // Getting embeddings
+  //     You can also get the embedding of an image to do transfer learning. 
+  //     The size of the embedding depends on the alpha (width) of the model.
+  //          model.infer(img: tf.Tensor3D | ImageData | HTMLImageElement |
+  //                      HTMLCanvasElement | HTMLVideoElement,
+  //                      embedding=false
+  //                     )
+  //          where
+  //              img: A tensor or an image element to make a classification on
+  //              embedding: If true, it returns the embedding. Otherwise it
+  //                          returns the 1000-dim unnormalized logits.
+  // const activation = net.infer(webcamElement, 'conv_preds');
+
+  // Pass the intermediate activation to the classifier.
+  // API doc: https://github.com/tensorflow/tfjs-models/tree/master/knn-classifier
+  //
+  //    classifier.addExample(example: tf.Tensor, label: number|string)
+  // where
+  //    example: An example to add to the dataset, usually an activation from another model
+  //    label: The label (class name) of the example
+  // classifier.addExample(activation, classId);
+
+  */
+
+
+  while (true) {
+
+
+    // If training is done and user selected to begin playing
+    if (do_play) {
+      // Get the activation from mobilenet from the webcam.
+      const activation = net.infer(webcamElement, 'conv_preds');
+      // Get the most likely class and confidences from the classifier module.
+      const result = await classifier.predictClass(activation);
+      //Can't figure out yet why the returned index (result.classIndex) does not 
+      //match the index with the  highest probability. I can see on JS debugger 
+      //for example:
+      //    result.confidences={0:0 , 1:0 , 2:1 , 3:0 }
+      //would mean class C (index 2), except that result.classIndex returns 0
+      //and so, the image would be reported as class A instead of class C.
+      //I've spent too much time on this. So, instead, for now use the ".label" 
+      //object also returned by the predictClass method. That does match.
+      my_prediction = classes[result.label];
+      my_probability = result.confidences[result.label];
+
+      // Set header
+      if (result.label == 3) {
+        // If class = "No action"
+         my_header="...I am waiting for you take some action and let me predict the classification of an object\n";
+       } else {
+         my_header="Matching...\n"
+       } // endif result
+
+        // Print classification and probability
+        console_div.innerText = `
+            ${my_header}
+            prediction: ${my_prediction}\n
+            probability: ${my_probability}
+        `;
+        // wait before moving to next frame and updating text on screen or else
+        // the text could change so fast and be annoying to user
+        await sleep(1000);
+
+    } // endif do_play
+
     await tf.nextFrame();
 
   } // while
+} // end app
 
-}  //function Classify
+
 
 
 async function setupWebcam() {
@@ -271,6 +250,17 @@ async function setupWebcam() {
     }
   });
 }
+
+
+
+
+// function sleep
+//   - input: milliseconds integer
+//   From https://stackoverflow.com/questions/951021/what-is-the-javascript-version-of-sleep
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve,ms));
+}
+
 
 
 app();
